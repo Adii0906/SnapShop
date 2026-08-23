@@ -104,6 +104,13 @@ export async function updateBusiness(slug: string, payload: BusinessUpdatePayloa
   return json<BusinessDetail>(res);
 }
 
+export async function uploadProductImage(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_URL}/api/media/images`, { method: "POST", body: form });
+  return json<{ url: string }>(res);
+}
+
 export interface ProductCreatePayload {
   name: string;
   price: number;

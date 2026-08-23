@@ -4,6 +4,11 @@ Used only by the real (non-demo) pipeline - see routers/upload.py for how
 demo mode vs. the real pipeline is chosen per request. Failures here must
 propagate to the caller as OCRServiceError; the router turns that into an
 error response for the user rather than ever falling back to demo data.
+
+PaddleOCR's constructor and result shape changed between the legacy 2.x
+API (`use_angle_cls`, `show_log`, `.ocr()`) and the 3.x pipeline API
+(`use_textline_orientation`, `.predict()`). Both are handled here so this
+works regardless of which major version ends up installed.
 """
 import logging
 import threading
@@ -18,6 +23,25 @@ class OCRServiceError(Exception):
 
 _engine_lock = threading.Lock()
 _engine: Optional[object] = None
+
+# Tried newest API first, then progressively older/plainer constructor
+# kwargs, so whichever PaddleOCR major version is installed still works.
+_CONSTRUCTOR_KWARGS = [
+    {"lang": "en", "use_textline_orientation": True},
+    {"lang": "en", "use_angle_cls": True},
+    {"lang": "en"},
+]
+
+
+def _construct_engine(PaddleOCR):
+    last_error: Optional[Exception] = None
+    for kwargs in _CONSTRUCTOR_KWARGS:
+        try:
+            return PaddleOCR(**kwargs)
+        except (TypeError, ValueError) as e:
+            last_error = e
+            continue
+    raise OCRServiceError(f"Failed to initialize PaddleOCR: {last_error}") from last_error
 
 
 def _get_engine():
@@ -34,8 +58,24 @@ def _get_engine():
                     "(paddleocr, paddlepaddle, opencv-python-headless) to use "
                     "the real OCR pipeline, or turn on Demo Mode."
                 ) from e
-            _engine = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+            _engine = _construct_engine(PaddleOCR)
     return _engine
+
+
+def _run_ocr(engine, img) -> list[str]:
+    """Return recognized text lines, supporting both the 3.x `.predict()`
+    pipeline API and the legacy 2.x `.ocr()` API."""
+    if hasattr(engine, "predict"):
+        results = engine.predict(img)
+        lines: list[str] = []
+        for res in results:
+            texts = res.get("rec_texts") if hasattr(res, "get") else getattr(res, "rec_texts", None)
+            if texts:
+                lines.extend(t for t in texts if t)
+        return lines
+
+    result = engine.ocr(img, cls=True)
+    return [line[1][0] for block in (result or []) if block for line in block]
 
 
 def extract_text(image_bytes: bytes) -> str:
@@ -63,11 +103,12 @@ def extract_text(image_bytes: bytes) -> str:
 
     engine = _get_engine()
     try:
-        result = engine.ocr(img, cls=True)
+        lines = _run_ocr(engine, img)
+    except OCRServiceError:
+        raise
     except Exception as e:
         raise OCRServiceError(f"PaddleOCR failed to process the image: {e}") from e
 
-    lines = [line[1][0] for block in (result or []) if block for line in block]
     text = "\n".join(lines).strip()
     if not text:
         raise OCRServiceError(
