@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.tracing import setup_tracing
 from app.db import models  # Ensures models are imported before create_all
 from app.db.database import Base, engine
-from app.routers import assistant, businesses, products, templates, upload
+from app.routers import assistant, businesses, media, products, templates, upload
+from app.routers.media import MEDIA_DIR
 
 # Initialize tracing conditionally if configured
 setup_tracing()
@@ -24,6 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
+
 
 @app.on_event("startup")
 def on_startup():
@@ -36,6 +40,7 @@ app.include_router(templates.router)
 app.include_router(businesses.router)
 app.include_router(products.router)
 app.include_router(assistant.router)
+app.include_router(media.router)
 
 
 @app.get("/")

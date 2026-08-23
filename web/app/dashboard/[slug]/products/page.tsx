@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { useDashboard } from "@/lib/dashboard-context";
 import { DashboardState } from "@/components/dashboard/DashboardState";
-import { createProduct, deleteProduct, updateProduct } from "@/lib/api";
+import { createProduct, deleteProduct, updateProduct, uploadProductImage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +118,23 @@ function ProductRow({
   const [category, setCategory] = useState(product.category_name || "");
   const [stock, setStock] = useState(product.stock);
   const [imageUrl, setImageUrl] = useState(product.image_url || "");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageFile(file: File) {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const { url } = await uploadProductImage(file);
+      setImageUrl(url);
+      onCommit(product, { image_url: url });
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <tr className="border-b border-line last:border-0" style={{ opacity: saving ? 0.6 : 1 }}>
@@ -175,13 +192,37 @@ function ProductRow({
         </button>
       </td>
       <td className="px-4 py-2">
-        <Input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          onBlur={() => imageUrl !== (product.image_url || "") && onCommit(product, { image_url: imageUrl || null })}
-          placeholder="Image URL"
-          className="border-transparent bg-transparent px-2 focus-visible:border-line"
-        />
+        <div className="flex items-center gap-1">
+          <Input
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            onBlur={() => imageUrl !== (product.image_url || "") && onCommit(product, { image_url: imageUrl || null })}
+            placeholder="Image URL (optional)"
+            className="border-transparent bg-transparent px-2 focus-visible:border-line"
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImageFile(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="shrink-0 rounded-sm p-1.5 text-ink-soft hover:bg-paper-dim hover:text-ink focus-ring disabled:opacity-50"
+            aria-label={`Upload image for ${product.name}`}
+            title="Upload an image"
+          >
+            <Upload className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {uploadError && <p className="mt-1 text-xs text-danger">{uploadError}</p>}
       </td>
       <td className="px-4 py-2 text-right">
         <button

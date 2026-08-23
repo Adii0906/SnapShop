@@ -8,6 +8,9 @@
 *.sqlite3
 dev.db
 
+# Uploaded product images (local dev storage)
+apps/api/media/
+
 # Python cache & bytecode
 __pycache__/
 *.py[cod]
