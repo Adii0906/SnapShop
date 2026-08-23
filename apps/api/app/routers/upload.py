@@ -4,8 +4,10 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.core.config import settings
 from app.schemas import ExtractionResult
-from app.services.seed_service import all_demo_slugs, load_demo_extraction
 from app.services import extraction_service, ocr_service
+from app.services.extraction_service import ExtractionServiceError
+from app.services.ocr_service import OCRServiceError
+from app.services.seed_service import all_demo_slugs, load_demo_extraction
 
 router = APIRouter(prefix="/api", tags=["upload"])
 
@@ -14,18 +16,29 @@ router = APIRouter(prefix="/api", tags=["upload"])
 async def upload_pamphlet(
     file: Optional[UploadFile] = File(None),
     demo_business: Optional[str] = Form(None),
+    demo_mode: Optional[bool] = Form(None),
 ):
     """Step 3/4 of the flow: upload a pamphlet, get back structured data.
 
-    DEMO_MODE=true (default): ignores the actual file bytes and returns a
-    seeded extraction result so the full flow works with zero external
-    API calls. Pass demo_business as one of: royal-fashion, spice-corner,
-    freshmart. Defaults to royal-fashion if omitted.
+    Demo Mode is an explicit, per-request choice made by the user in the
+    UI via the `demo_mode` field - it is never inferred or silently
+    applied. `settings.DEMO_MODE` only supplies the default when a caller
+    omits `demo_mode` entirely (e.g. a manual API request).
 
-    DEMO_MODE=false: runs the real OCR + LangChain/LangGraph pipeline
-    (see services/ocr_service.py and services/extraction_service.py).
+    demo_mode=true: ignores any uploaded file and returns seeded sample
+    data for `demo_business` (one of: royal-fashion, spice-corner,
+    freshmart - defaults to royal-fashion).
+
+    demo_mode=false: runs the real pipeline - PaddleOCR reads the
+    uploaded file (see services/ocr_service.py), then the Mistral-backed
+    extraction service (see services/extraction_service.py) turns that
+    text into structured business/product data. Any failure in that
+    pipeline is raised as an error response; it never falls back to demo
+    data.
     """
-    if settings.DEMO_MODE:
+    use_demo = settings.DEMO_MODE if demo_mode is None else demo_mode
+
+    if use_demo:
         slug = demo_business or "royal-fashion"
         result = load_demo_extraction(slug)
         if not result:
@@ -36,10 +49,24 @@ async def upload_pamphlet(
         return result
 
     if not file:
-        raise HTTPException(status_code=400, detail="file is required when DEMO_MODE=false")
+        raise HTTPException(
+            status_code=400,
+            detail="A pamphlet file is required when Demo Mode is off.",
+        )
+
     contents = await file.read()
-    ocr_text = ocr_service.extract_text(contents)
-    return extraction_service.extract_structured(ocr_text)
+    if not contents:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+
+    try:
+        ocr_text = ocr_service.extract_text(contents)
+    except OCRServiceError as e:
+        raise HTTPException(status_code=422, detail=f"OCR failed: {e}") from e
+
+    try:
+        return extraction_service.extract_structured(ocr_text)
+    except ExtractionServiceError as e:
+        raise HTTPException(status_code=502, detail=f"AI extraction failed: {e}") from e
 
 
 @router.get("/upload/demo-businesses")

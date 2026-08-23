@@ -15,14 +15,33 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`API error ${res.status}: ${text || res.statusText}`);
+    let message = text || res.statusText;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.detail === "string") message = parsed.detail;
+    } catch {
+      // response wasn't JSON - fall back to the raw text above
+    }
+    throw new Error(message);
   }
   return res.json();
 }
 
-export async function uploadPamphlet(demoBusinessSlug: string, file?: File): Promise<ExtractionResult> {
+export interface UploadPamphletParams {
+  /** Explicit, user-controlled choice - never inferred or defaulted client-side. */
+  demoMode: boolean;
+  demoBusinessSlug?: string;
+  file?: File | null;
+}
+
+export async function uploadPamphlet({
+  demoMode,
+  demoBusinessSlug,
+  file,
+}: UploadPamphletParams): Promise<ExtractionResult> {
   const form = new FormData();
-  form.append("demo_business", demoBusinessSlug);
+  form.append("demo_mode", String(demoMode));
+  if (demoBusinessSlug) form.append("demo_business", demoBusinessSlug);
   if (file) form.append("file", file);
   const res = await fetch(`${API_URL}/api/upload`, { method: "POST", body: form });
   return json<ExtractionResult>(res);
