@@ -1,0 +1,69 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces */
+  --color-ink: #16151a;
+  --color-ink-soft: #5b5952;
+  --color-paper: #f7f5f0;
+  --color-paper-dim: #edeae2;
+  --color-line: #e2ded3;
+
+  /* Brand accent - marigold, not the cliche terracotta */
+  --color-marigold: #d6922e;
+  --color-marigold-dim: #f3e3c7;
+  --color-marigold-ink: #5c3c0f;
+
+  /* Functional (confidence badges, status) - kept muted, separate from brand accent */
+  --color-success: #2f6b4f;
+  --color-success-dim: #e2ede7;
+  --color-warning: #b5790b;
+  --color-warning-dim: #f4e7d0;
+  --color-danger: #a8412f;
+  --color-danger-dim: #f3e0db;
+
+  /* Type - loaded via CSS @import above (not next/font, so builds don't
+     require build-time network access to Google Fonts) */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Restrained radius scale - no pill-shaped cards */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background-color: var(--color-marigold-dim);
+  color: var(--color-ink);
+}
+
+/* Respect reduced motion system-wide */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-marigold);
+  outline-offset: 2px;
+}
