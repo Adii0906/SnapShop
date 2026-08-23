@@ -1,0 +1,20 @@
+# Core Web & API Dependencies
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+pydantic==2.9.2
+python-dotenv==1.0.1
+python-multipart==0.0.12
+pillow==10.4.0
+
+# LangChain & Mistral AI (mistral-medium-latest)
+langchain==0.3.7
+langgraph==0.2.45
+langchain-mistralai==0.2.1
+
+# Disabled / Optional Integrations (commented out for lightweight testing)
+# psycopg2-binary==2.9.9
+# langsmith==0.1.140
+# paddleocr==2.9.1
+# paddlepaddle==2.6.2
+# opencv-python-headless==4.10.0.84

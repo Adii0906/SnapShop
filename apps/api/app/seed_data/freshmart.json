@@ -1,0 +1,26 @@
+{
+  "business": {
+    "name": "FreshMart",
+    "category": "grocery",
+    "phone": "9900112233",
+    "whatsapp": "9900112233",
+    "address": "HSR Layout, Bengaluru",
+    "description": "Neighbourhood grocery store for daily essentials."
+  },
+  "products": [
+    {"name": "Rice 5kg", "price": 450, "category": "Staples", "confidence": 0.96, "description": "Sona Masoori rice, 5kg pack."},
+    {"name": "Wheat 5kg", "price": 320, "category": "Staples", "confidence": 0.95, "description": "Whole wheat, 5kg pack."},
+    {"name": "Sugar 1kg", "price": 48, "category": "Staples", "confidence": 0.97, "description": "Refined white sugar."},
+    {"name": "Toor Dal 1kg", "price": 140, "category": "Staples", "confidence": 0.91, "description": "Split pigeon peas."},
+    {"name": "Cooking Oil 1L", "price": 165, "category": "Staples", "confidence": 0.89, "description": "Refined sunflower oil."},
+    {"name": "Milk 1L", "price": 60, "category": "Dairy", "confidence": 0.98, "description": "Toned milk, 1 litre pouch."},
+    {"name": "Paneer 200g", "price": 90, "category": "Dairy", "confidence": 0.86, "description": "Fresh cottage cheese block."},
+    {"name": "Curd 400g", "price": 45, "category": "Dairy", "confidence": 0.93, "description": "Fresh set curd."},
+    {"name": "Biscuits Pack", "price": 30, "category": "Snacks", "confidence": 0.8, "description": "Glucose biscuits, family pack."},
+    {"name": "Namkeen 200g", "price": 60, "category": "Snacks", "confidence": 0.84, "description": "Assorted savoury snack mix."},
+    {"name": "Chips", "price": 20, "category": "Snacks", "confidence": 0.9, "description": "Potato chips, single pack."}
+  ],
+  "offers": [
+    {"title": "Rice + Wheat Combo, Save Rs.50", "description": "Buy Rice 5kg with Wheat 5kg together."}
+  ]
+}

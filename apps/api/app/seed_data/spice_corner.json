@@ -1,0 +1,28 @@
+{
+  "business": {
+    "name": "Spice Corner",
+    "category": "restaurant",
+    "phone": "9845012345",
+    "whatsapp": "9845012345",
+    "address": "Jayanagar 4th Block, Bengaluru",
+    "description": "South Indian and North Indian vegetarian restaurant."
+  },
+  "products": [
+    {"name": "Veg Manchurian", "price": 150, "category": "Starters", "confidence": 0.93, "description": "Deep fried vegetable balls in Indo-Chinese sauce."},
+    {"name": "Paneer Tikka", "price": 220, "category": "Starters", "confidence": 0.9, "description": "Grilled marinated cottage cheese."},
+    {"name": "Masala Dosa", "price": 120, "category": "Main Course", "confidence": 0.97, "description": "Crisp rice crepe with spiced potato filling."},
+    {"name": "Paneer Butter Masala", "price": 220, "category": "Main Course", "confidence": 0.96, "description": "Cottage cheese in creamy tomato gravy."},
+    {"name": "Veg Biryani", "price": 180, "category": "Main Course", "confidence": 0.95, "description": "Fragrant rice with mixed vegetables and spices."},
+    {"name": "Chole Bhature", "price": 140, "category": "Main Course", "confidence": 0.87, "description": "Spiced chickpeas with fried bread."},
+    {"name": "Dal Makhani", "price": 160, "category": "Main Course", "confidence": 0.92, "description": "Slow cooked black lentils in butter and cream."},
+    {"name": "Butter Naan", "price": 50, "category": "Breads", "confidence": 0.98, "description": "Tandoor baked leavened bread with butter."},
+    {"name": "Tandoori Roti", "price": 30, "category": "Breads", "confidence": 0.96, "description": "Whole wheat tandoor bread."},
+    {"name": "Garlic Naan", "price": 60, "category": "Breads", "confidence": 0.94, "description": "Naan topped with garlic and coriander."},
+    {"name": "Masala Chai", "price": 30, "category": "Beverages", "confidence": 0.97, "description": "Spiced Indian tea."},
+    {"name": "Fresh Lime Soda", "price": 60, "category": "Beverages", "confidence": 0.85, "description": "Sweet or salted lime soda."}
+  ],
+  "offers": [
+    {"title": "Dosa Combo at Rs.140", "description": "Masala dosa with chutney and sambar."},
+    {"title": "20% off Beverages after 4pm", "description": "Applies to all beverages every evening."}
+  ]
+}

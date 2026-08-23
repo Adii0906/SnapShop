@@ -1,0 +1,35 @@
+{
+  "business": {
+    "name": "Royal Fashion",
+    "category": "fashion",
+    "phone": "9876543210",
+    "whatsapp": "9876543210",
+    "address": "Commercial Street, Bengaluru",
+    "description": "Men's fashion store specializing in shirts, denim, footwear and accessories."
+  },
+  "products": [
+    {"name": "Men's Formal Shirt - White", "price": 799, "category": "Shirts", "confidence": 0.98, "description": "Slim fit cotton formal shirt."},
+    {"name": "Men's Checked Shirt", "price": 849, "category": "Shirts", "confidence": 0.96, "description": "Casual checked cotton shirt."},
+    {"name": "Men's Linen Shirt", "price": 999, "category": "Shirts", "confidence": 0.94, "description": "Breathable linen shirt for summer."},
+    {"name": "Men's Casual Shirt - Blue", "price": 749, "category": "Shirts", "confidence": 0.97, "description": "Everyday casual cotton shirt."},
+    {"name": "Men's Slim Fit Jeans", "price": 1299, "category": "Jeans", "confidence": 0.95, "description": "Stretch denim, slim fit."},
+    {"name": "Men's Straight Fit Jeans", "price": 1199, "category": "Jeans", "confidence": 0.93, "description": "Classic straight fit denim."},
+    {"name": "Men's Jogger Jeans", "price": 1349, "category": "Jeans", "confidence": 0.89, "description": "Jogger-style denim with elastic cuffs."},
+    {"name": "Men's Round Neck T-Shirt", "price": 499, "category": "T-Shirts", "confidence": 0.97, "description": "100% cotton round neck tee."},
+    {"name": "Men's Polo T-Shirt", "price": 649, "category": "T-Shirts", "confidence": 0.96, "description": "Pique cotton polo."},
+    {"name": "Men's Graphic Tee", "price": 549, "category": "T-Shirts", "confidence": 0.83, "description": "Printed graphic t-shirt."},
+    {"name": "Men's V-Neck T-Shirt", "price": 479, "category": "T-Shirts", "confidence": 0.95, "description": "Soft cotton v-neck tee."},
+    {"name": "Sports Shoes", "price": 1999, "category": "Footwear", "confidence": 0.82, "description": "Running shoes with cushioned sole."},
+    {"name": "Casual Sneakers", "price": 1799, "category": "Footwear", "confidence": 0.91, "description": "Everyday canvas sneakers."},
+    {"name": "Formal Loafers", "price": 2199, "category": "Footwear", "confidence": 0.9, "description": "Leather slip-on loafers."},
+    {"name": "Sandals", "price": 899, "category": "Footwear", "confidence": 0.78, "description": "Comfort sandals for daily wear."},
+    {"name": "Leather Belt", "price": 599, "category": "Accessories", "confidence": 0.92, "description": "Genuine leather belt."},
+    {"name": "Analog Watch", "price": 1499, "category": "Accessories", "confidence": 0.88, "description": "Classic analog wrist watch."},
+    {"name": "Wallet", "price": 699, "category": "Accessories", "confidence": 0.93, "description": "Bi-fold leather wallet."}
+  ],
+  "offers": [
+    {"title": "Buy 2 T-Shirts, Get 1 Free", "description": "Applies to all t-shirts in stock."},
+    {"title": "Flat 20% off Footwear", "description": "Valid on all shoes, sneakers and sandals."},
+    {"title": "Shirt + Jeans Combo at Rs.1799", "description": "Pick any 1 shirt and any 1 jeans."}
+  ]
+}
