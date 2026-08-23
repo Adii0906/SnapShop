@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ProcessingSteps, type StepStatus } from "@/components/processing/ProcessingSteps";
+import { Button } from "@/components/ui/button";
 import { uploadPamphlet } from "@/lib/api";
+import { takePendingUpload, type PendingUpload } from "@/lib/pending-upload";
 import type { ExtractionResult } from "@/lib/types";
 
 const STEPS = [
@@ -21,30 +23,55 @@ const STEPS = [
 
 const STEP_DURATION_MS = 550;
 
-function ProcessingPageInner() {
+export default function ProcessingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const demoSlug = searchParams.get("demo") || "royal-fashion";
+  const takenRef = useRef(false);
+  const [pending, setPending] = useState<PendingUpload | null>(null);
+  const [missing, setMissing] = useState(false);
 
   const [stepIndex, setStepIndex] = useState(0);
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const resultRef = useRef<ExtractionResult | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  // Pick up the file + Demo Mode choice handed off from /upload. Guarded
+  // against React StrictMode's double-invoked effects, since the module
+  // singleton can only be taken once.
+  useEffect(() => {
+    if (takenRef.current) return;
+    takenRef.current = true;
+    const p = takePendingUpload();
+    if (!p) {
+      setMissing(true);
+      return;
+    }
+    setPending(p);
+  }, []);
 
   useEffect(() => {
-    uploadPamphlet(demoSlug)
-      .then((data) => {
-        resultRef.current = data;
-        setResult(data);
-      })
+    if (missing) router.replace("/upload");
+  }, [missing, router]);
+
+  useEffect(() => {
+    if (!pending) return;
+    setError(null);
+    setResult(null);
+    setStepIndex(0);
+    uploadPamphlet({
+      demoMode: pending.demoMode,
+      demoBusinessSlug: pending.demoBusinessSlug,
+      file: pending.file,
+    })
+      .then((data) => setResult(data))
       .catch((err) => setError(err instanceof Error ? err.message : "Extraction failed"));
-  }, [demoSlug]);
+  }, [pending, attempt]);
 
   useEffect(() => {
+    if (error) return;
     if (stepIndex >= STEPS.length - 1) return;
     const t = setTimeout(() => setStepIndex((i) => i + 1), STEP_DURATION_MS);
     return () => clearTimeout(t);
-  }, [stepIndex]);
+  }, [stepIndex, error]);
 
   const allStepsShown = stepIndex >= STEPS.length - 1;
   const ready = allStepsShown && result;
@@ -65,6 +92,10 @@ function ProcessingPageInner() {
     return "pending";
   });
 
+  function handleRetry() {
+    setAttempt((a) => a + 1);
+  }
+
   return (
     <main className="min-h-screen bg-paper text-ink flex items-center justify-center px-6">
       <div className="w-full max-w-md">
@@ -77,7 +108,15 @@ function ProcessingPageInner() {
 
         {error ? (
           <div className="rounded-lg border border-danger/40 bg-danger-dim p-5 text-sm text-danger">
-            {error}. <Link href="/upload" className="underline">Go back and try again</Link>.
+            <p>{error}</p>
+            <div className="mt-4 flex items-center gap-4">
+              <Button variant="accent" size="sm" onClick={handleRetry}>
+                Retry
+              </Button>
+              <Link href="/upload" className="underline">
+                Go back and try again
+              </Link>
+            </div>
           </div>
         ) : (
           <>
@@ -109,13 +148,5 @@ function StatChip({ label, value }: { label: string; value: number }) {
       <div className="font-mono text-2xl font-semibold text-ink">{value}</div>
       <div className="text-xs text-ink-soft mt-0.5">{label}</div>
     </div>
-  );
-}
-
-export default function ProcessingPage() {
-  return (
-    <Suspense fallback={null}>
-      <ProcessingPageInner />
-    </Suspense>
   );
 }

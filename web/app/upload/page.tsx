@@ -7,18 +7,22 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/upload/Dropzone";
 import { DEMO_BUSINESSES } from "@/lib/types";
+import { setPendingUpload } from "@/lib/pending-upload";
 import { cn } from "@/lib/utils";
 
 function UploadPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const demoParam = searchParams.get("demo");
+  const linkedDemoSlug = DEMO_BUSINESSES.some((d) => d.slug === demoParam) ? demoParam! : null;
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [simulateAs, setSimulateAs] = useState<string>(
-    DEMO_BUSINESSES.some((d) => d.slug === demoParam) ? demoParam! : "royal-fashion"
-  );
+  // Demo Mode is explicit and user-controlled: only pre-enabled when the
+  // user arrived via a "Try this demo" link from the landing page.
+  const [demoMode, setDemoMode] = useState(linkedDemoSlug !== null);
+  const [simulateAs, setSimulateAs] = useState<string>(linkedDemoSlug ?? "royal-fashion");
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -30,6 +34,7 @@ function UploadPageInner() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(f);
     setPreviewUrl(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
+    setFormError(null);
   }
 
   function handleClear() {
@@ -39,7 +44,13 @@ function UploadPageInner() {
   }
 
   function handleContinue() {
-    router.push(`/processing?demo=${simulateAs}`);
+    if (!demoMode && !file) {
+      setFormError("Upload a pamphlet photo before continuing, or turn on Demo Mode.");
+      return;
+    }
+    setFormError(null);
+    setPendingUpload({ demoMode, demoBusinessSlug: simulateAs, file });
+    router.push("/processing");
   }
 
   return (
@@ -63,31 +74,68 @@ function UploadPageInner() {
           <Dropzone file={file} previewUrl={previewUrl} onFile={handleFile} onClear={handleClear} />
         </div>
 
-        <div className="mt-10 rounded-lg border border-line bg-paper-dim/40 p-5">
-          <p className="text-sm font-medium">Demo mode</p>
-          <p className="mt-1 text-sm text-ink-soft">
-            This build runs on seeded sample data instead of live OCR. Pick which
-            sample pamphlet to extract from - the file above is just for preview.
+        {!demoMode && (
+          <p className="mt-3 text-sm text-ink-soft">
+            Your upload will go through the real pipeline: PaddleOCR reads the
+            image, then AI extracts products, prices, categories and business
+            details.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {DEMO_BUSINESSES.map((d) => (
-              <button
-                key={d.slug}
-                type="button"
-                onClick={() => setSimulateAs(d.slug)}
+        )}
+
+        <div className="mt-10 rounded-lg border border-line bg-paper-dim/40 p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Demo mode</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                Skip your upload and run the flow on seeded sample data instead.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={demoMode}
+              onClick={() => setDemoMode((v) => !v)}
+              className={cn(
+                "relative h-6 w-11 shrink-0 rounded-full border transition-colors focus-ring",
+                demoMode ? "border-marigold bg-marigold" : "border-line bg-paper"
+              )}
+            >
+              <span
                 className={cn(
-                  "rounded-md border px-3 py-2 text-left text-sm transition-colors focus-ring",
-                  simulateAs === d.slug
-                    ? "border-marigold bg-marigold-dim/50"
-                    : "border-line bg-paper hover:border-ink-soft"
+                  "absolute top-0.5 h-4 w-4 rounded-full bg-paper shadow transition-transform",
+                  demoMode ? "translate-x-6" : "translate-x-1"
                 )}
-              >
-                <span className="block font-medium">{d.label}</span>
-                <span className="block text-xs text-ink-soft">{d.hint}</span>
-              </button>
-            ))}
+              />
+            </button>
           </div>
+
+          {demoMode && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {DEMO_BUSINESSES.map((d) => (
+                <button
+                  key={d.slug}
+                  type="button"
+                  onClick={() => setSimulateAs(d.slug)}
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-left text-sm transition-colors focus-ring",
+                    simulateAs === d.slug
+                      ? "border-marigold bg-marigold-dim/50"
+                      : "border-line bg-paper hover:border-ink-soft"
+                  )}
+                >
+                  <span className="block font-medium">{d.label}</span>
+                  <span className="block text-xs text-ink-soft">{d.hint}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {formError && (
+          <p className="mt-4 text-sm text-danger" role="alert">
+            {formError}
+          </p>
+        )}
 
         <div className="mt-10 flex items-center justify-between">
           <Link href="/">
