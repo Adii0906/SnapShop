@@ -13,13 +13,16 @@ langgraph==0.2.45
 langchain-mistralai==0.2.1
 
 # Real OCR pipeline (used when Demo Mode is off).
-# Left unpinned above a floor: PaddleOCR's constructor/result API changed
-# significantly between the 2.x and 3.x lines, and ocr_service.py handles
-# both, so whichever recent release pip/conda resolves will work.
-numpy>=1.26.4
-opencv-python-headless>=4.10.0.84
-paddlepaddle>=2.6.2
-paddleocr>=2.7.0
+# Pinned to the PaddleOCR 2.x line on purpose: 3.x rewrote it into a
+# pipeline architecture that pulls in torch/transformers/tensorflow for
+# optional doc-understanding pipelines we don't use here - multiple GB of
+# extra deps just for plain text OCR. 2.x depends on paddlepaddle (CPU) +
+# opencv/numpy only. ocr_service.py's fallback logic still supports 3.x
+# too, in case a different environment installs it anyway.
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+paddlepaddle==2.6.2
+paddleocr==2.7.3
 
 # Disabled / Optional Integrations (commented out for lightweight testing)
 # psycopg2-binary==2.9.9
