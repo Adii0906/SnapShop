@@ -24,9 +24,17 @@ class OCRServiceError(Exception):
 _engine_lock = threading.Lock()
 _engine: Optional[object] = None
 
-# Tried newest API first, then progressively older/plainer constructor
-# kwargs, so whichever PaddleOCR major version is installed still works.
+# Tried newest-to-oldest constructor signature, and with oneDNN disabled
+# before enabled. `enable_mkldnn=False` matters on its own: PaddlePaddle's
+# oneDNN-accelerated CPU kernels can hit "ConvertPirAttribute2RuntimeAttribute
+# not support [...]" on some op/attribute combinations (a PaddlePaddle
+# PIR-executor bug, not anything under this app's control) - disabling
+# oneDNN runs the same model through plain CPU kernels instead and avoids
+# that failure class entirely, at a small speed cost.
 _CONSTRUCTOR_KWARGS = [
+    {"lang": "en", "use_textline_orientation": True, "enable_mkldnn": False},
+    {"lang": "en", "use_angle_cls": True, "enable_mkldnn": False},
+    {"lang": "en", "enable_mkldnn": False},
     {"lang": "en", "use_textline_orientation": True},
     {"lang": "en", "use_angle_cls": True},
     {"lang": "en"},
