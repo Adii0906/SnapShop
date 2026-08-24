@@ -12,17 +12,21 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+function errorDetail(text: string, fallback: string): string {
+  if (!text) return fallback;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed.detail === "string") return parsed.detail;
+  } catch {
+    // response wasn't JSON - fall back to the raw text
+  }
+  return text;
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    let message = text || res.statusText;
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed && typeof parsed.detail === "string") message = parsed.detail;
-    } catch {
-      // response wasn't JSON - fall back to the raw text above
-    }
-    throw new Error(message);
+    throw new Error(errorDetail(text, res.statusText));
   }
   return res.json();
 }
@@ -34,17 +38,46 @@ export interface UploadPamphletParams {
   file?: File | null;
 }
 
-export async function uploadPamphlet({
-  demoMode,
-  demoBusinessSlug,
-  file,
-}: UploadPamphletParams): Promise<ExtractionResult> {
+/**
+ * Uses XMLHttpRequest (rather than fetch) so real pamphlet uploads can
+ * report upload progress - fetch only exposes streamed *response* bodies,
+ * not upload progress, without much broader browser-support risk.
+ */
+export function uploadPamphlet(
+  { demoMode, demoBusinessSlug, file }: UploadPamphletParams,
+  onUploadProgress?: (fraction: number) => void
+): Promise<ExtractionResult> {
   const form = new FormData();
   form.append("demo_mode", String(demoMode));
   if (demoBusinessSlug) form.append("demo_business", demoBusinessSlug);
   if (file) form.append("file", file);
-  const res = await fetch(`${API_URL}/api/upload`, { method: "POST", body: form });
-  return json<ExtractionResult>(res);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/api/upload`);
+
+    if (onUploadProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onUploadProgress(e.loaded / e.total);
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error("The server returned an unexpected response."));
+        }
+        return;
+      }
+      reject(new Error(errorDetail(xhr.responseText, xhr.statusText || "Upload failed")));
+    };
+
+    xhr.onerror = () => reject(new Error("Network error - could not reach the API."));
+
+    xhr.send(form);
+  });
 }
 
 export async function listTemplates(): Promise<StoreTemplate[]> {

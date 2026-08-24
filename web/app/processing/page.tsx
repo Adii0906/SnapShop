@@ -33,6 +33,9 @@ export default function ProcessingPage() {
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Real upload progress (0-1) for a real pamphlet file; null when there's
+  // nothing to upload (Demo Mode) or once the upload itself has finished.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // Pick up the file + Demo Mode choice handed off from /upload. Guarded
   // against React StrictMode's double-invoked effects, since the module
@@ -54,16 +57,27 @@ export default function ProcessingPage() {
 
   useEffect(() => {
     if (!pending) return;
+    const trackProgress = !pending.demoMode && !!pending.file;
     setError(null);
     setResult(null);
     setStepIndex(0);
-    uploadPamphlet({
-      demoMode: pending.demoMode,
-      demoBusinessSlug: pending.demoBusinessSlug,
-      file: pending.file,
-    })
-      .then((data) => setResult(data))
-      .catch((err) => setError(err instanceof Error ? err.message : "Extraction failed"));
+    setUploadProgress(trackProgress ? 0 : null);
+    uploadPamphlet(
+      {
+        demoMode: pending.demoMode,
+        demoBusinessSlug: pending.demoBusinessSlug,
+        file: pending.file,
+      },
+      trackProgress ? (fraction) => setUploadProgress(fraction) : undefined
+    )
+      .then((data) => {
+        setUploadProgress((p) => (p === null ? null : 1));
+        setResult(data);
+      })
+      .catch((err) => {
+        setUploadProgress((p) => (p === null ? null : 1));
+        setError(err instanceof Error ? err.message : "Extraction failed");
+      });
   }, [pending, attempt]);
 
   useEffect(() => {
@@ -107,7 +121,12 @@ export default function ProcessingPage() {
         </h1>
 
         {error ? (
-          <div className="rounded-lg border border-danger/40 bg-danger-dim p-5 text-sm text-danger">
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="rounded-lg border border-danger/40 bg-danger-dim p-5 text-sm text-danger"
+          >
             <p>{error}</p>
             <div className="mt-4 flex items-center gap-4">
               <Button variant="accent" size="sm" onClick={handleRetry}>
@@ -117,9 +136,23 @@ export default function ProcessingPage() {
                 Go back and try again
               </Link>
             </div>
-          </div>
+          </motion.div>
         ) : (
           <>
+            {uploadProgress !== null && uploadProgress < 1 && (
+              <div className="mb-6">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-dim">
+                  <motion.div
+                    className="h-full rounded-full bg-marigold"
+                    animate={{ width: `${Math.round(uploadProgress * 100)}%` }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </div>
+                <p className="mt-1.5 font-mono text-xs text-ink-soft">
+                  Uploading pamphlet - {Math.round(uploadProgress * 100)}%
+                </p>
+              </div>
+            )}
             <ProcessingSteps steps={STEPS} statuses={statuses} />
 
             {result && (
