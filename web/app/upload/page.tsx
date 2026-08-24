@@ -71,7 +71,13 @@ function UploadPageInner() {
         </p>
 
         <div className="mt-8">
-          <Dropzone file={file} previewUrl={previewUrl} onFile={handleFile} onClear={handleClear} />
+          <Dropzone
+            file={file}
+            previewUrl={previewUrl}
+            onFile={handleFile}
+            onClear={handleClear}
+            onRejected={setFormError}
+          />
         </div>
 
         {!demoMode && (

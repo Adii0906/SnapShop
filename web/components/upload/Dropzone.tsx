@@ -4,18 +4,24 @@ import { useCallback, useRef, useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+// Matches ALLOWED_PAMPHLET_CONTENT_TYPES in apps/api/app/routers/upload.py -
+// PDF isn't supported by the OCR service yet, so it's rejected client-side
+// with a clear message instead of round-tripping to the server first.
+const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
+const MAX_BYTES = 10 * 1024 * 1024; // 10MB, matches the backend limit
 
 export function Dropzone({
   file,
   previewUrl,
   onFile,
   onClear,
+  onRejected,
 }: {
   file: File | null;
   previewUrl: string | null;
   onFile: (file: File) => void;
   onClear: () => void;
+  onRejected?: (message: string) => void;
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,10 +30,17 @@ export function Dropzone({
     (files: FileList | null) => {
       const f = files?.[0];
       if (!f) return;
-      if (!ACCEPTED.includes(f.type)) return;
+      if (!ACCEPTED.includes(f.type)) {
+        onRejected?.("Unsupported file type. Upload a JPG, PNG, or WEBP photo of the pamphlet.");
+        return;
+      }
+      if (f.size > MAX_BYTES) {
+        onRejected?.("Image is too large (max 10MB). Try a smaller photo.");
+        return;
+      }
       onFile(f);
     },
-    [onFile]
+    [onFile, onRejected]
   );
 
   if (file) {
@@ -87,7 +100,7 @@ export function Dropzone({
         <Upload className="h-5 w-5 text-ink-soft" strokeWidth={1.75} />
       </div>
       <p className="text-sm font-medium">Drag and drop your pamphlet here</p>
-      <p className="text-xs text-ink-soft">or click to browse - JPG, PNG, WEBP or PDF</p>
+      <p className="text-xs text-ink-soft">or click to browse - JPG, PNG or WEBP</p>
       <input
         ref={inputRef}
         type="file"

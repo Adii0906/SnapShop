@@ -6,11 +6,9 @@ propagate to the caller as ExtractionServiceError; the router turns that
 into an error response for the user rather than ever falling back to demo
 data.
 """
-import json
 import logging
-import re
 
-from app.schemas import ExtractionResult
+from app.schemas import ExtractionCandidate, ExtractionResult, ExtractionStats
 from app.services.ai_service import AIServiceError, get_mistral_llm
 
 logger = logging.getLogger(__name__)
@@ -21,32 +19,8 @@ class ExtractionServiceError(Exception):
 
 
 EXTRACTION_PROMPT = """You are reading OCR text extracted from a printed pamphlet, \
-flyer or menu for a small local business. Turn it into structured JSON.
-
-Return ONLY a single JSON object (no prose, no markdown fences) with this shape:
-{{
-  "business": {{
-    "name": string,
-    "category": string,
-    "phone": string,
-    "whatsapp": string,
-    "address": string,
-    "description": string
-  }},
-  "products": [
-    {{
-      "name": string,
-      "price": number,
-      "description": string,
-      "confidence": number between 0 and 1,
-      "category": string,
-      "stock": integer
-    }}
-  ],
-  "offers": [
-    {{ "title": string, "description": string }}
-  ]
-}}
+flyer or menu for a small local business. Identify the business and every \
+product/menu item it lists, and call the given function with that data.
 
 Rules:
 - Extract every distinct product or menu item you can find, together with its price.
@@ -60,43 +34,44 @@ OCR TEXT:
 """
 
 
-def _parse_json_object(raw: str) -> dict:
-    match = re.search(r"\{.*\}", raw.strip(), re.DOTALL)
-    if not match:
-        raise ExtractionServiceError("The AI model did not return valid JSON.")
-    try:
-        return json.loads(match.group(0))
-    except json.JSONDecodeError as e:
-        raise ExtractionServiceError(f"The AI model returned malformed JSON: {e}") from e
-
-
 def extract_structured(ocr_text: str) -> ExtractionResult:
-    """Turn raw OCR text into a validated ExtractionResult via Mistral."""
+    """Turn raw OCR text into a validated ExtractionResult via Mistral.
+
+    Uses the model's structured-output / tool-calling mode (bound to
+    ExtractionCandidate) rather than asking for free-form JSON and
+    regex-parsing the response - the provider enforces the schema shape,
+    and whatever comes back is still pydantic-validated again here before
+    use.
+    """
     try:
         llm = get_mistral_llm()
     except AIServiceError as e:
         raise ExtractionServiceError(str(e)) from e
 
     try:
-        response = llm.invoke(EXTRACTION_PROMPT.format(ocr_text=ocr_text))
+        structured_llm = llm.with_structured_output(ExtractionCandidate)
+        candidate = structured_llm.invoke(EXTRACTION_PROMPT.format(ocr_text=ocr_text))
     except Exception as e:
         raise ExtractionServiceError(f"AI extraction request failed: {e}") from e
 
-    content = getattr(response, "content", response)
-    candidate = _parse_json_object(content if isinstance(content, str) else str(content))
+    if not isinstance(candidate, ExtractionCandidate):
+        try:
+            candidate = ExtractionCandidate.model_validate(candidate)
+        except Exception as e:
+            raise ExtractionServiceError(f"AI output didn't match the expected format: {e}") from e
 
-    products = candidate.get("products") or []
-    offers = candidate.get("offers") or []
-    categories = sorted({p.get("category", "Uncategorized") for p in products})
-    candidate["offers"] = offers
-    candidate["stats"] = {
-        "products": len(products),
-        "categories": len(categories),
-        "offers": len(offers),
-        "businesses": 1,
-    }
+    # Stats are always recomputed here rather than trusted from the model.
+    categories = sorted({p.category for p in candidate.products})
+    stats = ExtractionStats(
+        products=len(candidate.products),
+        categories=len(categories),
+        offers=len(candidate.offers),
+        businesses=1,
+    )
 
-    try:
-        return ExtractionResult.model_validate(candidate)
-    except Exception as e:
-        raise ExtractionServiceError(f"AI output didn't match the expected format: {e}") from e
+    return ExtractionResult(
+        business=candidate.business,
+        products=candidate.products,
+        offers=candidate.offers,
+        stats=stats,
+    )

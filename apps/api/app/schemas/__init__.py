@@ -8,7 +8,12 @@ from app.schemas.business import (
     OfferOut,
     OfferUpdate,
 )
-from app.schemas.extraction import ExtractionBusiness, ExtractionResult, ExtractionStats
+from app.schemas.extraction import (
+    ExtractionBusiness,
+    ExtractionCandidate,
+    ExtractionResult,
+    ExtractionStats,
+)
 from app.schemas.assistant import AssistantAction, AssistantChatRequest, AssistantChatResponse
 from app.schemas.template import TemplateOut
 
@@ -26,6 +31,7 @@ __all__ = [
     "ExtractionStats",
     "ExtractionBusiness",
     "ExtractionResult",
+    "ExtractionCandidate",
     "TemplateOut",
     "FinalizeRequest",
     "AssistantAction",

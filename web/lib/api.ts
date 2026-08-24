@@ -17,6 +17,15 @@ function errorDetail(text: string, fallback: string): string {
   try {
     const parsed = JSON.parse(text);
     if (parsed && typeof parsed.detail === "string") return parsed.detail;
+    // Defense in depth: FastAPI's default validation-error shape is a list
+    // of {loc, msg, type} - the backend's own handler already flattens
+    // this to a string, but fall back to doing it here too in case some
+    // other path returns the raw shape.
+    if (parsed && Array.isArray(parsed.detail)) {
+      return parsed.detail
+        .map((e: { msg?: string }) => (typeof e?.msg === "string" ? e.msg : JSON.stringify(e)))
+        .join("; ");
+    }
   } catch {
     // response wasn't JSON - fall back to the raw text
   }

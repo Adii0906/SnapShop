@@ -1,12 +1,8 @@
 from typing import List
 from pydantic import BaseModel
 
+from app.schemas.offer import OfferIn
 from app.schemas.product import ProductIn
-
-
-class OfferIn(BaseModel):
-    title: str
-    description: str = ""
 
 
 class ExtractionStats(BaseModel):
@@ -30,3 +26,13 @@ class ExtractionResult(BaseModel):
     products: List[ProductIn]
     offers: List[OfferIn] = []
     stats: ExtractionStats
+
+
+class ExtractionCandidate(BaseModel):
+    """What the AI is actually asked to produce - no `stats`, since those
+    are always recomputed server-side from `products`/`offers` rather than
+    trusted from the model (see extraction_service.extract_structured)."""
+
+    business: ExtractionBusiness
+    products: List[ProductIn]
+    offers: List[OfferIn] = []

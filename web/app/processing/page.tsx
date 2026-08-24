@@ -23,6 +23,22 @@ const STEPS = [
 
 const STEP_DURATION_MS = 550;
 
+/** Backend prefixes errors by pipeline stage (see routers/upload.py) - turn
+ * that into the title/body split the design calls for, instead of one
+ * run-on sentence. */
+function classifyError(message: string): { title: string; body: string } {
+  const stages: [prefix: string, title: string][] = [
+    ["OCR failed: ", "OCR Processing Failed"],
+    ["AI extraction failed: ", "AI Extraction Failed"],
+  ];
+  for (const [prefix, title] of stages) {
+    if (message.startsWith(prefix)) {
+      return { title, body: message.slice(prefix.length) };
+    }
+  }
+  return { title: "Something Went Wrong", body: message };
+}
+
 export default function ProcessingPage() {
   const router = useRouter();
   const takenRef = useRef(false);
@@ -127,7 +143,15 @@ export default function ProcessingPage() {
             transition={{ duration: 0.3 }}
             className="rounded-lg border border-danger/40 bg-danger-dim p-5 text-sm text-danger"
           >
-            <p>{error}</p>
+            {(() => {
+              const { title, body } = classifyError(error);
+              return (
+                <>
+                  <p className="font-medium">{title}</p>
+                  <p className="mt-1">{body}</p>
+                </>
+              );
+            })()}
             <div className="mt-4 flex items-center gap-4">
               <Button variant="accent" size="sm" onClick={handleRetry}>
                 Retry

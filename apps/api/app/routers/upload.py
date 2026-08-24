@@ -11,6 +11,9 @@ from app.services.seed_service import all_demo_slugs, load_demo_extraction
 
 router = APIRouter(prefix="/api", tags=["upload"])
 
+MAX_PAMPHLET_BYTES = 10 * 1024 * 1024  # 10 MB
+ALLOWED_PAMPHLET_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
 
 @router.post("/upload", response_model=ExtractionResult)
 async def upload_pamphlet(
@@ -54,9 +57,24 @@ async def upload_pamphlet(
             detail="A pamphlet file is required when Demo Mode is off.",
         )
 
+    if file.content_type not in ALLOWED_PAMPHLET_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file type '{file.content_type}'. Upload a JPG, "
+                "PNG, or WEBP photo of the pamphlet (PDF isn't supported yet - "
+                "please photograph or export it as an image first)."
+            ),
+        )
+
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+    if len(contents) > MAX_PAMPHLET_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail="Image is too large (max 10MB). Try a smaller photo.",
+        )
 
     try:
         ocr_text = ocr_service.extract_text(contents)

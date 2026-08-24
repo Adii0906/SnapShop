@@ -1,12 +1,8 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
+from app.schemas.offer import OfferIn
 from app.schemas.product import CategoryOut, ProductIn, ProductOut
-
-
-class OfferIn(BaseModel):
-    title: str
-    description: str = ""
 
 
 class OfferOut(OfferIn):
