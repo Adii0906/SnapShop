@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { CheckCircle2, LayoutDashboard, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,15 +13,32 @@ function StoreReadyInner() {
   return (
     <main className="min-h-screen bg-paper text-ink flex items-center justify-center px-6">
       <div className="max-w-md text-center">
-        <CheckCircle2 className="h-10 w-10 text-success mx-auto" strokeWidth={1.5} />
-        <h1 className="mt-5 font-display text-3xl font-semibold tracking-tight">
-          Your store is live
-        </h1>
-        <p className="mt-3 text-ink-soft font-mono text-sm">
-          /store/{slug}
-        </p>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        >
+          <CheckCircle2 className="h-10 w-10 text-success mx-auto" strokeWidth={1.5} />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+        >
+          <h1 className="mt-5 font-display text-3xl font-semibold tracking-tight">
+            Your store is live
+          </h1>
+          <p className="mt-3 text-ink-soft font-mono text-sm">
+            /store/{slug}
+          </p>
+        </motion.div>
 
-        <div className="mt-8 flex flex-col items-center justify-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="mt-8 flex flex-col items-center justify-center gap-3"
+        >
           <Link href={`/store/${slug}`} className="w-full">
             <Button variant="accent" size="lg" className="w-full">
               <Store className="h-4 w-4" /> View your store
@@ -34,7 +52,7 @@ function StoreReadyInner() {
           <Link href="/upload" className="text-sm text-ink-soft underline underline-offset-4 mt-1">
             Try another pamphlet
           </Link>
-        </div>
+        </motion.div>
       </div>
     </main>
   );

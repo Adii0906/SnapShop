@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Trash2, Upload, X } from "lucide-react";
 import { useDashboard } from "@/lib/dashboard-context";
 import { DashboardState } from "@/components/dashboard/DashboardState";
 import { createProduct, deleteProduct, updateProduct, uploadProductImage } from "@/lib/api";
@@ -136,8 +136,17 @@ function ProductRow({
     }
   }
 
+  function handleRemoveImage() {
+    setImageUrl("");
+    setUploadError(null);
+    onCommit(product, { image_url: null });
+  }
+
   return (
-    <tr className="border-b border-line last:border-0" style={{ opacity: saving ? 0.6 : 1 }}>
+    <tr
+      className="border-b border-line last:border-0 transition-opacity duration-200"
+      style={{ opacity: saving ? 0.6 : 1 }}
+    >
       <td className="px-4 py-2">
         <div className="flex items-center gap-3">
           {product.image_url ? (
@@ -221,6 +230,18 @@ function ProductRow({
           >
             <Upload className="h-3.5 w-3.5" />
           </button>
+          {imageUrl && (
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              disabled={uploading}
+              className="shrink-0 rounded-sm p-1.5 text-ink-soft hover:bg-paper-dim hover:text-danger focus-ring disabled:opacity-50"
+              aria-label={`Remove image for ${product.name}`}
+              title="Remove image"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         {uploadError && <p className="mt-1 text-xs text-danger">{uploadError}</p>}
       </td>
