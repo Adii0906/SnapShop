@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, ScanLine, Sparkles, Store, ArrowRight } from "lucide-react";
+import { FileText, Github, ScanLine, Sparkles, Store, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroScan } from "@/components/landing/HeroScan";
 
@@ -111,9 +111,25 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="mx-auto max-w-6xl px-6 py-10 flex items-center justify-between text-sm text-ink-soft">
-        <span>SnapShop</span>
-        <span>Pamphlet in, storefront out.</span>
+      <footer className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex items-center justify-between text-sm text-ink-soft">
+          <span>SnapShop</span>
+          <span>Pamphlet in, storefront out.</span>
+        </div>
+        <div className="mt-4 pt-4 border-t border-line/60 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-soft/80">
+          <p className="flex items-center gap-1.5">
+            Built with <span aria-hidden>❤️</span> for small businesses by
+            <a
+              href="https://github.com/Adii0906"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-ink transition-colors"
+            >
+              <Github className="h-3.5 w-3.5" /> Aditya
+            </a>
+          </p>
+          <p>Liked SnapShop? Give it a 👏</p>
+        </div>
       </footer>
     </main>
   );
