@@ -1,14 +1,22 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle2, LayoutDashboard, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { markStoreOwned } from "@/lib/store-ownership";
 
 function StoreReadyInner() {
   const slug = useSearchParams().get("slug") || "";
+
+  // This is the one moment we know for certain this browser is the seller -
+  // used only to decide whether to show the seller nav on the storefront
+  // later (see lib/store-ownership.ts), not real access control.
+  useEffect(() => {
+    if (slug) markStoreOwned(slug);
+  }, [slug]);
 
   return (
     <main className="min-h-screen bg-paper text-ink flex items-center justify-center px-6">

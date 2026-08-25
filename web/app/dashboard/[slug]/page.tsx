@@ -6,6 +6,13 @@ import { useDashboard } from "@/lib/dashboard-context";
 import { DashboardState } from "@/components/dashboard/DashboardState";
 import { Badge } from "@/components/ui/badge";
 
+function timeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function OverviewPage() {
   const { business, loading, error } = useDashboard();
 
@@ -19,7 +26,12 @@ export default function OverviewPage() {
 
   return (
     <div className="p-8 max-w-4xl">
-      <p className="font-mono text-xs uppercase tracking-widest text-ink-soft">Overview</p>
+      <p className="text-sm text-ink-soft">
+        {business.name ? `${timeOfDayGreeting()}, ${business.name} 👋` : "Welcome back 👋"}
+      </p>
+      <p className="mt-0.5 text-xs text-ink-soft/70">Here&apos;s what&apos;s happening with your store today.</p>
+
+      <p className="mt-6 font-mono text-xs uppercase tracking-widest text-ink-soft">Overview</p>
       <div className="mt-1 flex items-center gap-2.5">
         <h1 className="font-display text-2xl font-semibold tracking-tight">{business.name}</h1>
         <Badge variant={business.is_published ? "success" : "neutral"}>
