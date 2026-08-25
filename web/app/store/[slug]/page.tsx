@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getBusiness } from "@/lib/api";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ProductModal } from "@/components/storefront/ProductModal";
+import { SellerToolbar } from "@/components/storefront/SellerToolbar";
 import {
   CategoryTabs,
   ContactFooter,
@@ -14,6 +15,7 @@ import {
   StoreHeader,
   StoreHero,
 } from "@/components/storefront/StorefrontParts";
+import { isStoreOwned } from "@/lib/store-ownership";
 import type { BusinessDetail, CartLine, Product } from "@/lib/types";
 
 export default function StorefrontPage() {
@@ -25,6 +27,14 @@ export default function StorefrontPage() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    // Read after mount only - localStorage isn't available during SSR, and
+    // this is a client-only "probably the seller" signal anyway (see
+    // lib/store-ownership.ts), never something to gate real access on.
+    setIsOwner(isStoreOwned(slug));
+  }, [slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +129,7 @@ export default function StorefrontPage() {
         business={business}
         onOrderPlaced={() => setCart([])}
       />
+      {isOwner && <SellerToolbar slug={slug} />}
     </main>
   );
 }
