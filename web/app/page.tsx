@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Github, ScanLine, Sparkles, Store, ArrowRight } from "lucide-react";
+import { FileText, ScanLine, Sparkles, Store, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroScan } from "@/components/landing/HeroScan";
 
@@ -123,9 +123,9 @@ export default function LandingPage() {
               href="https://github.com/Adii0906"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-ink transition-colors"
+              className="underline underline-offset-2 hover:text-ink transition-colors"
             >
-              <Github className="h-3.5 w-3.5" /> Aditya
+              Aditya
             </a>
           </p>
           <p>Liked SnapShop? Give it a 👏</p>
