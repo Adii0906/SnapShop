@@ -8,10 +8,11 @@ import { cn } from "@/lib/utils";
 
 /**
  * Subtle floating entry point to the seller dashboard, shown only to
- * (probably) the store's own owner - see lib/store-ownership.ts. Mirrors
- * CartDrawer's slide-in panel conventions (same overlay/z-index/timing),
- * just from the opposite edge, so it reads as part of the same system
- * rather than a bolted-on admin panel.
+ * (probably) the store's own owner - see lib/store-ownership.ts. Sits
+ * top-right, just below the sticky store header, so it's immediately
+ * visible without competing with it. Mirrors CartDrawer's slide-in panel
+ * conventions (same overlay/z-index/timing/edge) so it reads as part of
+ * the same system rather than a bolted-on admin panel.
  */
 export function SellerToolbar({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
@@ -27,7 +28,7 @@ export function SellerToolbar({ slug }: { slug: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 left-5 z-20 flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink-soft shadow-md transition-colors hover:text-ink hover:border-ink-soft focus-ring"
+        className="fixed top-20 right-5 z-20 flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink-soft shadow-md transition-colors hover:text-ink hover:border-ink-soft focus-ring"
         aria-label="Open seller tools"
       >
         <LayoutDashboard className="h-4 w-4" />
@@ -45,10 +46,10 @@ export function SellerToolbar({ slug }: { slug: string }) {
               onClick={() => setOpen(false)}
             />
             <motion.aside
-              className="fixed left-0 top-0 bottom-0 w-full max-w-xs bg-paper z-50 shadow-xl flex flex-col border-r border-line"
-              initial={{ x: "-100%" }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-xs bg-paper z-50 shadow-xl flex flex-col border-l border-line"
+              initial={{ x: "100%" }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
+              exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.25 }}
             >
               <div className="flex items-center justify-between p-5 border-b border-line">
