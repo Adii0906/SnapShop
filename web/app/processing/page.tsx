@@ -10,18 +10,18 @@ import { uploadPamphlet } from "@/lib/api";
 import { takePendingUpload, type PendingUpload } from "@/lib/pending-upload";
 import type { ExtractionResult } from "@/lib/types";
 
+// Matches the real pipeline 1:1 - no fixed per-step timer. The backend
+// runs OCR + AI extraction as a single request with no incremental
+// progress signal, so steps after the upload are shown as one honest "in
+// progress" group (see `statuses` below) rather than fake, individually
+// timed completions.
 const STEPS = [
-  "Pamphlet uploaded",
-  "Image preprocessing",
-  "PaddleOCR reading pamphlet",
+  "Uploading pamphlet",
+  "Reading image with PaddleOCR",
   "Extracting products",
-  "Detecting prices",
-  "Detecting categories",
-  "Understanding business",
-  "Preparing your store",
+  "AI analysis",
+  "Preparing your storefront",
 ];
-
-const STEP_DURATION_MS = 550;
 
 /** Backend prefixes errors by pipeline stage (see routers/upload.py) - turn
  * that into the title/body split the design calls for, instead of one
@@ -45,7 +45,6 @@ export default function ProcessingPage() {
   const [pending, setPending] = useState<PendingUpload | null>(null);
   const [missing, setMissing] = useState(false);
 
-  const [stepIndex, setStepIndex] = useState(0);
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -76,7 +75,6 @@ export default function ProcessingPage() {
     const trackProgress = !pending.demoMode && !!pending.file;
     setError(null);
     setResult(null);
-    setStepIndex(0);
     setUploadProgress(trackProgress ? 0 : null);
     uploadPamphlet(
       {
@@ -97,29 +95,31 @@ export default function ProcessingPage() {
   }, [pending, attempt]);
 
   useEffect(() => {
-    if (error) return;
-    if (stepIndex >= STEPS.length - 1) return;
-    const t = setTimeout(() => setStepIndex((i) => i + 1), STEP_DURATION_MS);
-    return () => clearTimeout(t);
-  }, [stepIndex, error]);
-
-  const allStepsShown = stepIndex >= STEPS.length - 1;
-  const ready = allStepsShown && result;
-
-  useEffect(() => {
-    if (!ready) return;
+    if (!result) return;
     const t = setTimeout(() => {
       sessionStorage.setItem("snapshop:extraction", JSON.stringify(result));
       sessionStorage.setItem("shopsnap:extraction", JSON.stringify(result));
       router.push("/review");
     }, 900);
     return () => clearTimeout(t);
-  }, [ready, result, router]);
+  }, [result, router]);
 
+  // Real signals only. Step 0 (upload) tracks actual XHR progress; there's
+  // nothing to upload in Demo Mode so it's trivially done. Steps 1-4 can't
+  // be distinguished from each other (one synchronous backend request
+  // covers all of them), so they move together: pending until the upload
+  // finishes, active as one group while the request is in flight, done
+  // together only once the real result comes back.
+  const uploadDone = pending?.demoMode || uploadProgress === null ? true : uploadProgress >= 1;
+  const backendDone = !!result;
   const statuses: StepStatus[] = STEPS.map((_, i) => {
-    if (i < stepIndex) return "done";
-    if (i === stepIndex) return ready ? "done" : "active";
-    return "pending";
+    if (i === 0) {
+      if (pending?.demoMode) return "done";
+      if (uploadProgress === null) return "pending";
+      return uploadProgress >= 1 ? "done" : "active";
+    }
+    if (!uploadDone) return "pending";
+    return backendDone ? "done" : "active";
   });
 
   function handleRetry() {
@@ -178,6 +178,13 @@ export default function ProcessingPage() {
               </div>
             )}
             <ProcessingSteps steps={STEPS} statuses={statuses} />
+
+            {!pending?.demoMode && !result && (
+              <p className="mt-4 text-xs text-ink-soft">
+                Processing usually takes around 3-5 minutes depending on the image.
+                Please keep this page open.
+              </p>
+            )}
 
             {result && (
               <motion.div

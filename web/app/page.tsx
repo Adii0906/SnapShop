@@ -36,9 +36,19 @@ export default function LandingPage() {
     <main className="min-h-screen bg-paper text-ink">
       <header className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
         <span className="font-display text-lg font-semibold tracking-tight">SnapShop</span>
-        <Link href="/upload">
-          <Button variant="outline" size="sm">Create My Store</Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          <a
+            href="https://github.com/Adii0906/SnapShop"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink transition-colors"
+          >
+            ⭐ Star this repo
+          </a>
+          <Link href="/upload">
+            <Button variant="outline" size="sm">Create My Store</Button>
+          </Link>
+        </div>
       </header>
 
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-20 grid lg:grid-cols-2 gap-16 items-center">

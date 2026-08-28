@@ -8,11 +8,13 @@ import { createProduct, deleteProduct, updateProduct, uploadProductImage } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/toast";
 import type { Product } from "@/lib/types";
 
 export default function ProductsPage() {
   const { business, loading, error, refresh } = useDashboard();
   const [savingId, setSavingId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   if (loading || error || !business) return <DashboardState loading={loading} error={error} />;
 
@@ -28,25 +30,37 @@ export default function ProductsPage() {
         image_url: patch.image_url,
       });
       await refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't save changes", "error");
     } finally {
       setSavingId(null);
     }
   }
 
   async function handleDelete(product: Product) {
-    await deleteProduct(business!.slug, product.id);
-    await refresh();
+    try {
+      await deleteProduct(business!.slug, product.id);
+      await refresh();
+      showToast(`${product.name} deleted`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't delete product", "error");
+    }
   }
 
   async function handleAdd() {
-    await createProduct(business!.slug, {
-      name: "New product",
-      price: 0,
-      category: business!.categories[0]?.name || "Uncategorized",
-      stock: 0,
-      image_url: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80",
-    });
-    await refresh();
+    try {
+      await createProduct(business!.slug, {
+        name: "New product",
+        price: 0,
+        category: business!.categories[0]?.name || "Uncategorized",
+        stock: 0,
+        image_url: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80",
+      });
+      await refresh();
+      showToast("Product added");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't add product", "error");
+    }
   }
 
   return (

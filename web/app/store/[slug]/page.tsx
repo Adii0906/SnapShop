@@ -99,7 +99,14 @@ export default function StorefrontPage() {
 
   return (
     <main className="min-h-screen bg-paper text-ink">
-      <StoreHeader business={business} cartCount={cartCount} onCartClick={() => setIsCartOpen(true)} />
+      {isOwner ? (
+        <div className="sticky top-0 z-30">
+          <SellerToolbar slug={slug} />
+          <StoreHeader business={business} cartCount={cartCount} onCartClick={() => setIsCartOpen(true)} />
+        </div>
+      ) : (
+        <StoreHeader business={business} cartCount={cartCount} onCartClick={() => setIsCartOpen(true)} />
+      )}
       <StoreHero business={business} />
       <OffersStrip offers={business.offers} accent={business.accent_color} />
       <CategoryTabs categories={business.categories} active={activeCategory} onSelect={setActiveCategory} />
@@ -129,7 +136,6 @@ export default function StorefrontPage() {
         business={business}
         onOrderPlaced={() => setCart([])}
       />
-      {isOwner && <SellerToolbar slug={slug} />}
     </main>
   );
 }

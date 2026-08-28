@@ -6,6 +6,7 @@ import { DashboardState } from "@/components/dashboard/DashboardState";
 import { updateBusiness } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { listTemplates } from "@/lib/api";
 import type { StoreTemplate } from "@/lib/types";
 
@@ -41,6 +42,7 @@ export default function CustomizationPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [templates, setTemplates] = useState<StoreTemplate[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (business) {
@@ -77,6 +79,9 @@ export default function CustomizationPage() {
     try {
       await updateBusiness(business!.slug, form);
       await refresh();
+      showToast("Store settings saved");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't save store settings", "error");
     } finally {
       setIsSaving(false);
     }
