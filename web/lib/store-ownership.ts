@@ -38,3 +38,8 @@ export function isStoreOwned(slug: string): boolean {
     return false;
   }
 }
+
+/** All stores this browser owns, for the "switch store" list. */
+export function listOwnedStores(): string[] {
+  return readOwnedSlugs();
+}

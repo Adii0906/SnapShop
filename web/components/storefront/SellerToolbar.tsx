@@ -3,100 +3,87 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { LayoutDashboard, Package, Settings, Store, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { LayoutDashboard, Package, Settings, Store } from "lucide-react";
+import { listOwnedStores } from "@/lib/store-ownership";
 
 /**
- * Subtle floating entry point to the seller dashboard, shown only to
- * (probably) the store's own owner - see lib/store-ownership.ts. Sits
- * top-right, just below the sticky store header, so it's immediately
- * visible without competing with it. Mirrors CartDrawer's slide-in panel
- * conventions (same overlay/z-index/timing/edge) so it reads as part of
- * the same system rather than a bolted-on admin panel.
+ * Persistent seller admin strip, shown only to (probably) the store's own
+ * owner - see lib/store-ownership.ts. The parent page stacks this above
+ * the public StoreHeader without modifying StorefrontParts.tsx at all, so
+ * the customer-facing header is completely untouched. Always visible at
+ * the top of the page (not a floating button) so the seller never needs
+ * the browser back button to reach their dashboard.
  */
 export function SellerToolbar({ slug }: { slug: string }) {
-  const [open, setOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const otherStores = listOwnedStores().filter((s) => s !== slug);
 
   const links = [
-    { href: `/dashboard/${slug}`, label: "Seller Dashboard", icon: LayoutDashboard, primary: true },
-    { href: `/dashboard/${slug}/products`, label: "Products", icon: Package },
+    { href: `/dashboard/${slug}`, label: "Seller Dashboard", icon: LayoutDashboard },
+    { href: `/dashboard/${slug}/products`, label: "Manage Products", icon: Package },
     { href: `/dashboard/${slug}/customization`, label: "Store Settings", icon: Settings },
   ];
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed top-20 right-5 z-20 flex items-center gap-2 rounded-full border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink-soft shadow-md transition-colors hover:text-ink hover:border-ink-soft focus-ring"
-        aria-label="Open seller tools"
-      >
-        <LayoutDashboard className="h-4 w-4" />
-        Seller tools
-      </button>
+    <div className="bg-ink text-paper">
+      <div className="mx-auto max-w-5xl px-6 h-10 flex items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-1.5 shrink-0 text-paper/70">
+          <Store className="h-3.5 w-3.5" strokeWidth={1.75} />
+          <span className="hidden sm:inline" title="Only visible to you as the store owner">
+            Seller view
+          </span>
+          {otherStores.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSwitcherOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-sm px-1.5 py-0.5 transition-colors hover:bg-paper/10 focus-ring"
+              >
+                Switch store <span aria-hidden>&#9662;</span>
+              </button>
+              <AnimatePresence>
+                {switcherOpen && (
+                  <>
+                    {/* Click-outside-to-close catcher, below the menu itself in z-order */}
+                    <div className="fixed inset-0 z-40" onClick={() => setSwitcherOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 top-full mt-1 min-w-40 rounded-md border border-line bg-paper py-1 text-ink shadow-lg z-50"
+                    >
+                      {otherStores.map((s) => (
+                        <Link
+                          key={s}
+                          href={`/store/${s}`}
+                          onClick={() => setSwitcherOpen(false)}
+                          className="block px-3 py-1.5 text-sm transition-colors hover:bg-paper-dim"
+                        >
+                          {s}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              className="fixed inset-0 bg-ink/40 z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-            />
-            <motion.aside
-              className="fixed right-0 top-0 bottom-0 w-full max-w-xs bg-paper z-50 shadow-xl flex flex-col border-l border-line"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "tween", duration: 0.25 }}
+        <nav className="flex items-center gap-1 overflow-x-auto">
+          {links.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm px-2.5 py-1.5 text-paper/80 transition-colors hover:bg-paper/10 hover:text-paper focus-ring"
             >
-              <div className="flex items-center justify-between p-5 border-b border-line">
-                <span className="font-display text-base font-semibold">Seller tools</span>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="p-1.5 rounded-sm hover:bg-paper-dim focus-ring"
-                  aria-label="Close seller tools"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <nav className="flex-1 p-3 space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-sm text-ink-soft transition-colors hover:bg-paper-dim hover:text-ink"
-                >
-                  <Store className="h-4 w-4" strokeWidth={1.75} />
-                  View Store
-                </button>
-                {links.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors",
-                      item.primary
-                        ? "bg-ink text-paper hover:bg-ink/90"
-                        : "text-ink-soft hover:bg-paper-dim hover:text-ink"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" strokeWidth={1.75} />
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-
-              <div className="p-4 border-t border-line text-xs text-ink-soft">
-                Only visible to you as the store owner.
-              </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+              <item.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+              <span className="hidden sm:inline">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </div>
   );
 }
