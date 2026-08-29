@@ -79,7 +79,13 @@ async def upload_pamphlet(
     try:
         ocr_text = ocr_service.extract_text(contents)
     except OCRServiceError as e:
-        raise HTTPException(status_code=422, detail=f"OCR failed: {e}") from e
+        # 502, not 422: 422 is reserved for genuine request-shape problems
+        # (FastAPI's own validation, handled in main.py). An OCR failure is
+        # this server failing to process an otherwise well-formed request -
+        # sharing 422 with request validation made every OCR failure and
+        # every validation mismatch indistinguishable from a bare status
+        # code in a log line, which cost real debugging time more than once.
+        raise HTTPException(status_code=502, detail=f"OCR failed: {e}") from e
 
     try:
         return extraction_service.extract_structured(ocr_text)
