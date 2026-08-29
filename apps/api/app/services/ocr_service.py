@@ -24,24 +24,33 @@ class OCRServiceError(Exception):
 _engine_lock = threading.Lock()
 _engine: Optional[object] = None
 
-# oneDNN (mkldnn) acceleration is tried first - it's meaningfully faster on
-# CPU, which matters a lot on a modest deploy host. It was previously
-# disabled by default here to dodge a PaddlePaddle PIR-executor bug
-# ("ConvertPirAttribute2RuntimeAttribute not support [...]"), but that bug
-# is specific to the 3.x pipeline rewrite's PIR system, which requirements.txt
-# now pins paddlepaddle/paddleocr below (<3.0.0) - so paying the mkldnn-off
-# speed cost by default no longer buys anything on the version this app
-# actually installs. The disabled variants stay as a last-resort fallback.
+# A prior fix stopped explicitly passing enable_mkldnn=False, on the
+# (wrong) assumption that PaddleOCR's own default was mkldnn-on - a
+# deployed log showed `enable_mkldnn=False` in the engine's printed config
+# regardless, meaning that change was a no-op. mkldnn must be explicitly
+# requested to actually turn CPU acceleration on. It's safe to do that
+# here: the crash it was once disabled to dodge
+# ("ConvertPirAttribute2RuntimeAttribute not support [...]") is specific to
+# PaddlePaddle 3.x's PIR system, which requirements.txt pins below
+# (<3.0.0).
 #
-# Tried newest-to-oldest constructor signature too, so whichever PaddleOCR
-# major version ends up installed still works.
+# det_limit_side_len=640 (down from PaddleOCR's default 960) caps the
+# resolution the detection model resizes to internally - the single
+# biggest lever for CPU inference time. A real deploy log showed 126 text
+# boxes taking 121 seconds at the default; pamphlet text is large enough
+# in practice that this rarely costs missed detections.
+#
+# Progressively simpler fallbacks in case an installed version doesn't
+# recognize one of these kwargs (TypeError/ValueError only - a fallback
+# here never re-tries after a runtime inference failure).
+_FAST_KWARGS = {"enable_mkldnn": True, "det_limit_side_len": 640}
 _CONSTRUCTOR_KWARGS = [
+    {"lang": "en", "use_textline_orientation": True, **_FAST_KWARGS},
+    {"lang": "en", "use_angle_cls": True, **_FAST_KWARGS},
+    {"lang": "en", **_FAST_KWARGS},
     {"lang": "en", "use_textline_orientation": True},
     {"lang": "en", "use_angle_cls": True},
     {"lang": "en"},
-    {"lang": "en", "use_textline_orientation": True, "enable_mkldnn": False},
-    {"lang": "en", "use_angle_cls": True, "enable_mkldnn": False},
-    {"lang": "en", "enable_mkldnn": False},
 ]
 
 
@@ -155,3 +164,18 @@ def extract_text(image_bytes: bytes) -> str:
             "clearer, well-lit photo of the pamphlet."
         )
     return text
+
+
+def warmup() -> None:
+    """Best-effort: build the OCR engine now instead of waiting for the
+    first real upload. On a cold start, the first call otherwise pays for
+    PaddleOCR's model download (tens of seconds on a slow host) *and*
+    engine construction on top of that user's own OCR request. Meant to be
+    called from a background thread at app startup (see main.py) - never
+    raises, since a failed warmup just means the first real request does
+    the work instead, same as before this existed.
+    """
+    try:
+        _get_engine()
+    except Exception:
+        logger.warning("OCR engine warmup failed; will retry on first real request", exc_info=True)

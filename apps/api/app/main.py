@@ -1,4 +1,5 @@
 import logging
+import threading
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -12,6 +13,7 @@ from app.db import models  # Ensures models are imported before create_all
 from app.db.database import Base, engine
 from app.routers import assistant, businesses, media, products, templates, upload
 from app.routers.media import MEDIA_DIR
+from app.services import ocr_service
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    # Backgrounded, not awaited: PaddleOCR's model download/load can take
+    # tens of seconds on a slow host, and blocking startup on it risks
+    # missing the platform's health-check window. Uvicorn binds the port
+    # and starts serving immediately either way; the first real upload
+    # just waits on the same lock if warmup is still in flight.
+    threading.Thread(target=ocr_service.warmup, daemon=True).start()
 
 
 # Register API routers
