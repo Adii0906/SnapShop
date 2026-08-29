@@ -65,10 +65,16 @@ def _get_engine():
             try:
                 from paddleocr import PaddleOCR
             except ImportError as e:
+                # Include the real ImportError text - it's frequently not
+                # "the package is missing" at all (e.g. a missing shared
+                # library like libgomp.so.1 that paddlepaddle's compiled
+                # wheel needs at import time raises ImportError too), and a
+                # generic message hides the one thing needed to fix it.
                 raise OCRServiceError(
-                    "PaddleOCR is not installed. Install requirements.txt "
-                    "(paddleocr, paddlepaddle, opencv-python-headless) to use "
-                    "the real OCR pipeline, or turn on Demo Mode."
+                    f"PaddleOCR could not be imported ({e}). If paddleocr and "
+                    "paddlepaddle are installed but this still fails, it's "
+                    "usually a missing system shared library on the host, "
+                    "not a missing Python package."
                 ) from e
             _engine = _construct_engine(PaddleOCR)
     return _engine
@@ -120,8 +126,9 @@ def extract_text(image_bytes: bytes) -> str:
         import numpy as np
     except ImportError as e:
         raise OCRServiceError(
-            "opencv-python-headless is not installed. Install requirements.txt "
-            "to use the real OCR pipeline, or turn on Demo Mode."
+            f"opencv-python-headless/numpy could not be imported ({e}). "
+            "Install requirements.txt to use the real OCR pipeline, or turn "
+            "on Demo Mode."
         ) from e
 
     arr = np.frombuffer(image_bytes, dtype=np.uint8)

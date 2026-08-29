@@ -20,16 +20,20 @@ langchain-mistralai==0.2.1
 # opencv/numpy only. ocr_service.py's fallback logic still supports 3.x
 # too, in case a different environment installs it anyway.
 #
-# Ranges instead of exact pins: paddlepaddle only ships prebuilt wheels
-# for specific Python versions (see runtime.txt, which pins the build to
-# one that has them), and only for specific patch releases per platform -
-# an exact pin that isn't published as a wheel for a given host just
-# fails outright. A range lets pip resolve to whatever's actually
-# available, while the upper bound keeps it off the heavy 3.x line.
-numpy>=1.24.0,<2.0.0
-opencv-python-headless>=4.8.0,<5.0.0
-paddlepaddle>=2.5.0,<3.0.0
-paddleocr>=2.7.0,<3.0.0
+# Exact pins, not ranges: a prior version of this file used ranges so pip
+# could resolve around "no wheel for this Python version" errors. That
+# worked once, then a later redeploy silently resolved to a *different*
+# version within the same range and failed to import at runtime ("PaddleOCR
+# is not installed") - a moving target on every fresh build is exactly what
+# a production deploy shouldn't have. Pinned to the versions confirmed
+# installing and running cleanly on Python 3.11.9 (see runtime.txt /
+# .python-version): if these ever stop having a wheel for a given host,
+# that's a deliberate version bump to make, not something to leave to
+# whatever pip resolves at build time.
+numpy==1.26.4
+opencv-python-headless==4.11.0.86
+paddlepaddle==2.6.2
+paddleocr==2.10.0
 
 # Disabled / Optional Integrations (commented out for lightweight testing)
 # psycopg2-binary==2.9.9
