@@ -24,20 +24,24 @@ class OCRServiceError(Exception):
 _engine_lock = threading.Lock()
 _engine: Optional[object] = None
 
-# Tried newest-to-oldest constructor signature, and with oneDNN disabled
-# before enabled. `enable_mkldnn=False` matters on its own: PaddlePaddle's
-# oneDNN-accelerated CPU kernels can hit "ConvertPirAttribute2RuntimeAttribute
-# not support [...]" on some op/attribute combinations (a PaddlePaddle
-# PIR-executor bug, not anything under this app's control) - disabling
-# oneDNN runs the same model through plain CPU kernels instead and avoids
-# that failure class entirely, at a small speed cost.
+# oneDNN (mkldnn) acceleration is tried first - it's meaningfully faster on
+# CPU, which matters a lot on a modest deploy host. It was previously
+# disabled by default here to dodge a PaddlePaddle PIR-executor bug
+# ("ConvertPirAttribute2RuntimeAttribute not support [...]"), but that bug
+# is specific to the 3.x pipeline rewrite's PIR system, which requirements.txt
+# now pins paddlepaddle/paddleocr below (<3.0.0) - so paying the mkldnn-off
+# speed cost by default no longer buys anything on the version this app
+# actually installs. The disabled variants stay as a last-resort fallback.
+#
+# Tried newest-to-oldest constructor signature too, so whichever PaddleOCR
+# major version ends up installed still works.
 _CONSTRUCTOR_KWARGS = [
-    {"lang": "en", "use_textline_orientation": True, "enable_mkldnn": False},
-    {"lang": "en", "use_angle_cls": True, "enable_mkldnn": False},
-    {"lang": "en", "enable_mkldnn": False},
     {"lang": "en", "use_textline_orientation": True},
     {"lang": "en", "use_angle_cls": True},
     {"lang": "en"},
+    {"lang": "en", "use_textline_orientation": True, "enable_mkldnn": False},
+    {"lang": "en", "use_angle_cls": True, "enable_mkldnn": False},
+    {"lang": "en", "enable_mkldnn": False},
 ]
 
 
@@ -86,6 +90,25 @@ def _run_ocr(engine, img) -> list[str]:
     return [line[1][0] for block in (result or []) if block for line in block]
 
 
+# Phone cameras commonly shoot 3000-4000px on the long side. PaddleOCR's
+# detection+recognition cost scales with pixel count, so on a modest
+# CPU-only deploy host that difference alone can be minutes versus
+# seconds. Printed pamphlet text stays perfectly readable well below this,
+# so downscale before inference rather than feeding the full-resolution
+# photo through unchanged.
+_MAX_IMAGE_DIMENSION = 1600
+
+
+def _downscale_if_needed(img, cv2, max_dimension: int = _MAX_IMAGE_DIMENSION):
+    height, width = img.shape[:2]
+    longest_side = max(height, width)
+    if longest_side <= max_dimension:
+        return img
+    scale = max_dimension / longest_side
+    new_size = (round(width * scale), round(height * scale))
+    return cv2.resize(img, new_size, interpolation=cv2.INTER_AREA)
+
+
 def extract_text(image_bytes: bytes) -> str:
     """Run PaddleOCR on raw pamphlet image bytes and return the raw text.
 
@@ -108,6 +131,7 @@ def extract_text(image_bytes: bytes) -> str:
             "Could not read the uploaded file as an image. Upload a JPG, PNG "
             "or WEBP photo of the pamphlet (PDF pages aren't supported yet)."
         )
+    img = _downscale_if_needed(img, cv2)
 
     engine = _get_engine()
     try:
