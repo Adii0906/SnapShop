@@ -82,9 +82,9 @@ function UploadPageInner() {
 
         {!demoMode && (
           <p className="mt-3 text-sm text-ink-soft">
-            Your upload will go through the real pipeline: PaddleOCR reads the
-            image, then AI extracts products, prices, categories and business
-            details.
+            Your upload will go through the real pipeline: Tesseract OCR reads
+            the image, then AI extracts products, prices, categories and
+            business details.
           </p>
         )}
 

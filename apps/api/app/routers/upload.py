@@ -32,7 +32,7 @@ async def upload_pamphlet(
     data for `demo_business` (one of: royal-fashion, spice-corner,
     freshmart - defaults to royal-fashion).
 
-    demo_mode=false: runs the real pipeline - PaddleOCR reads the
+    demo_mode=false: runs the real pipeline - Tesseract OCR reads the
     uploaded file (see services/ocr_service.py), then the Mistral-backed
     extraction service (see services/extraction_service.py) turns that
     text into structured business/product data. Any failure in that

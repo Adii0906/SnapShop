@@ -13,27 +13,13 @@ langgraph==0.2.45
 langchain-mistralai==0.2.1
 
 # Real OCR pipeline (used when Demo Mode is off).
-# Kept to the PaddleOCR 2.x line on purpose: 3.x rewrote it into a
-# pipeline architecture that pulls in torch/transformers/tensorflow for
-# optional doc-understanding pipelines we don't use here - multiple GB of
-# extra deps just for plain text OCR. 2.x depends on paddlepaddle (CPU) +
-# opencv/numpy only. ocr_service.py's fallback logic still supports 3.x
-# too, in case a different environment installs it anyway.
-#
-# Exact pins, not ranges: a prior version of this file used ranges so pip
-# could resolve around "no wheel for this Python version" errors. That
-# worked once, then a later redeploy silently resolved to a *different*
-# version within the same range and failed to import at runtime ("PaddleOCR
-# is not installed") - a moving target on every fresh build is exactly what
-# a production deploy shouldn't have. Pinned to the versions confirmed
-# installing and running cleanly on Python 3.11.9 (see runtime.txt /
-# .python-version): if these ever stop having a wheel for a given host,
-# that's a deliberate version bump to make, not something to leave to
-# whatever pip resolves at build time.
-numpy==1.26.4
-opencv-python-headless==4.11.0.86
-paddlepaddle==2.6.2
-paddleocr==2.10.0
+# Tesseract via pytesseract, not PaddleOCR - see ocr_service.py's module
+# docstring for why. pytesseract is a thin wrapper around the `tesseract`
+# system binary (installed in apps/api/Dockerfile, not pip-installable) -
+# no deep-learning framework, no model downloads, far lighter than
+# PaddleOCR/paddlepaddle was. Image decoding/resizing uses pillow (already
+# a dependency above), so opencv/numpy are no longer needed either.
+pytesseract==0.3.13
 
 # Disabled / Optional Integrations (commented out for lightweight testing)
 # psycopg2-binary==2.9.9
