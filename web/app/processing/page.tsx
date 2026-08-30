@@ -17,7 +17,7 @@ import type { ExtractionResult } from "@/lib/types";
 // timed completions.
 const STEPS = [
   "Uploading pamphlet",
-  "Reading image with PaddleOCR",
+  "Reading image with Tesseract OCR",
   "Extracting products",
   "AI analysis",
   "Preparing your storefront",

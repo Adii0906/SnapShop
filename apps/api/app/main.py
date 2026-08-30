@@ -64,11 +64,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-    # Backgrounded, not awaited: PaddleOCR's model download/load can take
-    # tens of seconds on a slow host, and blocking startup on it risks
-    # missing the platform's health-check window. Uvicorn binds the port
-    # and starts serving immediately either way; the first real upload
-    # just waits on the same lock if warmup is still in flight.
+    # Backgrounded, not awaited: this just confirms the tesseract-ocr
+    # system binary is actually reachable, logging a clear warning early
+    # if it isn't rather than only surfacing that on a user's first real
+    # upload. Uvicorn binds the port and starts serving immediately either
+    # way - the check never blocks startup.
     threading.Thread(target=ocr_service.warmup, daemon=True).start()
 
 
