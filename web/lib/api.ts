@@ -10,7 +10,28 @@ import type {
   StoreTemplate,
 } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Every call below builds URLs as `${API_URL}/api/...` - if the env var
+// itself ends in a slash (e.g. copy-pasted from a browser address bar as
+// "https://host.onrender.com/"), that produces "https://host.onrender.com//api/..."
+// with a double slash, which doesn't match any FastAPI route and fails
+// CORS preflight too. Stripped here once so every call site downstream
+// is correct regardless of how the env var was entered.
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+
+if (typeof window !== "undefined" && !process.env.NEXT_PUBLIC_API_URL) {
+  const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  if (!isLocalHost) {
+    // NEXT_PUBLIC_API_URL is inlined at build time - if it's missing here,
+    // it was never set when this was built, not something a runtime fix
+    // can patch. Loud console warning so a misconfigured production
+    // deploy is obvious in devtools instead of just "requests fail".
+    console.warn(
+      "[SnapShop] NEXT_PUBLIC_API_URL was not set at build time - falling back to " +
+        `${API_URL}, which is almost certainly wrong in production. Set it in your ` +
+        "deployment platform's environment variables and rebuild."
+    );
+  }
+}
 
 function errorDetail(text: string, fallback: string): string {
   if (!text) return fallback;

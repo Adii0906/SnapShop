@@ -25,8 +25,13 @@ class Settings:
     LANGCHAIN_TRACING_V2: bool = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
     
     # CORS
+    # Trailing slashes stripped: a browser's Origin header never has one
+    # (it's scheme+host+port only), so an entry like "https://host.com/"
+    # pasted from an address bar would never match and silently break
+    # every cross-origin request with no error beyond a generic CORS
+    # failure in devtools.
     CORS_ORIGINS: List[str] = [
-        origin.strip()
+        origin.strip().rstrip("/")
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
         if origin.strip()
     ]
